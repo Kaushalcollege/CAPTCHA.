@@ -1,3 +1,5 @@
+# src/model_evaluation.py
+
 from tensorflow.keras.models import load_model
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.preprocessing import StandardScaler
@@ -13,12 +15,26 @@ model.summary()
 # Load the test data
 data = pd.read_csv('../data/processed1_rba-dataset.csv')
 
+# Print dataset columns to verify
+print("Dataset columns:", data.columns)
+
 # Convert timestamps to numeric features (adjust based on your specific needs)
 data['Login Timestamp'] = pd.to_datetime(data['Login Timestamp'])
 data['Login Timestamp'] = data['Login Timestamp'].map(lambda x: (x - pd.Timestamp("1970-01-01")) // pd.Timedelta('1s'))
 
-# Drop non-numeric columns and check for missing values
-X_test = data.drop(columns=['Is Attack IP', 'Is Account Takeover'])
+# Define the list of columns used for training (must match the training feature set)
+# Update this list based on the actual columns in your dataset
+required_columns = ['Round-Trip Time [ms]', 'Country', 'Region', 'City', 'ASN', 'Device Type', 'Login Successful']
+
+# Ensure that all required columns are in the DataFrame
+missing_columns = [col for col in required_columns if col not in data.columns]
+if missing_columns:
+    raise ValueError(f"Missing columns in the dataset: {missing_columns}")
+
+# Select the required columns
+X_test = data[required_columns]
+
+# Convert to numeric and handle missing values
 X_test = X_test.apply(pd.to_numeric, errors='coerce').fillna(0)
 
 # Print the shape of X_test to match the model's input
@@ -27,8 +43,9 @@ print("Shape of X_test:", X_test.shape)
 # Example target
 y_test = data['Is Account Takeover']
 
-# Scale features if needed
+# Scale features consistently with training data
 scaler = StandardScaler()
+# Assuming the scaler used during training was fitted on the same features
 X_test_scaled = scaler.fit_transform(X_test)
 
 # Print the shape of scaled data to ensure it matches model input
