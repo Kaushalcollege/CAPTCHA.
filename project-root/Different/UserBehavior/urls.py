@@ -1,8 +1,10 @@
 from django.urls import path
 from .views import MouseMoveCreateView, KeyPressCreateView, ClickCreateView
+import sys
+print(sys.path)
 
 urlpatterns = [
-    path('api/mouse_moves/', MouseMoveCreateView.as_view(), name='mouse_move_create'),
-    path('api/key_presses/', KeyPressCreateView.as_view(), name='key_press_create'),
-    path('api/clicks/', ClickCreateView.as_view(), name='click_create'),
+    path('api/mouse_moves/', MouseMoveCreateView.as_view(), name='mouse_moves'),
+    path('api/key_presses/', KeyPressCreateView.as_view(), name='key_presses'),
+    path('api/clicks/', ClickCreateView.as_view(), name='clicks'),
 ]

@@ -61,6 +61,16 @@ CORS_ALLOWED_ORIGINS = [
     # Add other allowed origins here
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',
+    ),
+}
+
 ROOT_URLCONF = 'Different.urls'
 
 TEMPLATES = [
