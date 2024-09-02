@@ -3,9 +3,27 @@ from rest_framework.views import APIView
 from .models import MouseMove, KeyPress, Click
 from rest_framework import status
 from django.shortcuts import render
+from django.http import JsonResponse
+from .model_inference import predict_user_behavior
+
+
+def predict_view(request):
+    if request.method == 'POST':
+        # Extract data from the POST request
+        data = request.POST.get('data')
+        data = [float(x) for x in data.split(',')]  # Convert the data to a list of floats
+
+        # Use the model to make a prediction
+        prediction = predict_user_behavior(data)
+
+        # Return the prediction as a JSON response
+        return JsonResponse({'prediction': prediction.tolist()})
+
+    return JsonResponse({'error': 'Only POST requests are allowed.'})
+
 
 def home(request):
-    return render(request, 'UserBehavior/index.html')
+    return render(request, 'UserBehavior/index1.html')
 
 class MouseMoveCreateView(APIView):
     def post(self, request, *args, **kwargs):

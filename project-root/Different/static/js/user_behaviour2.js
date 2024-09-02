@@ -1,104 +1,82 @@
-let lastKeyPressTime = 0;
-let keyPressCount = 0;
+// Function to get the current timestamp in ISO format
+function getCurrentTimestamp() {
+    return new Date().toISOString();
+}
 
-document.addEventListener('DOMContentLoaded', function () {
-    const loginButton = document.getElementById('login-button');
+// Function to get user browser and OS information
+function getBrowserAndOSInfo() {
+    const userAgent = navigator.userAgent;
+    const browserInfo = userAgent.match(/(Firefox|MSIE|Trident|Edge|Chrome|Safari|Opera)/i);
+    const osInfo = userAgent.match(/(Windows NT|Macintosh|Linux|Android|iPhone|iPad)/i);
+    return {
+        browser: browserInfo ? browserInfo[0] : 'Unknown',
+        os: osInfo ? osInfo[0] : 'Unknown'
+    };
+}
 
-    if (loginButton) {
-        loginButton.addEventListener('click', function (event) {
-            event.preventDefault();
+// Function to simulate measuring round-trip time (RTT)
+// Replace this with actual logic to measure RTT if needed
+function getRoundTripTime() {
+    // Example: Simulating round-trip time as a random value between 50 and 250 ms
+    return Math.floor(Math.random() * 200) + 50;
+}
 
-            console.log('Login button clicked!');
-
-            fetch('/UserBehavior/log_interaction/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCSRFToken(),
-                },
-                body: JSON.stringify({
-                    action: 'login',
-                    username: document.getElementById('username').value,
-                }),
-            }).then(response => {
-                if (response.ok) {
-                    console.log('Interaction logged successfully!');
-                } else {
-                    console.error('Failed to log interaction');
-                }
-            });
+// Function to send the collected data to the server
+async function sendData(data) {
+    try {
+        const response = await fetch('/predict/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams(data) // Convert the data to URL-encoded format
         });
-    }
 
-    document.addEventListener('mousemove', function (event) {
-        let mouseData = {
-            x: event.clientX,
-            y: event.clientY,
-            timestamp: Date.now()
-        };
-        storeData('mouse_moves', mouseData);
-    });
-
-    document.addEventListener('keydown', function (event) {
-        let currentTime = Date.now();
-        let typingSpeed = calculateTypingSpeed(currentTime);
-        let keyData = {
-            key: event.key,
-            typingSpeed: typingSpeed,
-            timestamp: currentTime
-        };
-        storeData('key_presses', keyData);
-    });
-
-    document.addEventListener('click', function (event) {
-        let clickData = {
-            x: event.clientX,
-            y: event.clientY,
-            timestamp: Date.now()
-        };
-        storeData('clicks', clickData);
-    });
-});
-
-function calculateTypingSpeed(currentTime) {
-    if (lastKeyPressTime === 0) {
-        lastKeyPressTime = currentTime;
-        return 0;
-    }
-
-    let timeDifference = (currentTime - lastKeyPressTime) / 1000; // in seconds
-    lastKeyPressTime = currentTime;
-
-    if (timeDifference > 0) {
-        keyPressCount++;
-        return (keyPressCount / timeDifference).toFixed(2);
-    }
-
-    return 0;
-}
-
-function storeData(endpoint, data) {
-    fetch(`http://localhost:8000/api/${endpoint}/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCSRFToken(),
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => {
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error('Network response was not ok');
         }
-        return response.json();
-    })
-    .then(result => {
-        console.log('Data stored successfully', result);
-    })
-    .catch(error => console.error('Error storing data:', error));
+
+        const result = await response.json();
+        console.log('Prediction:', result.prediction);
+    } catch (error) {
+        console.error('Error:', error);
+    }
 }
 
-function getCSRFToken() {
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    return csrfToken;
+// Function to collect and send data
+function collectAndSendData() {
+    // Collecting the necessary data
+    const roundTripTime = getRoundTripTime();
+    const country = 'USA'; // Example static value, use IP geolocation API for dynamic value
+    const { browser, os } = getBrowserAndOSInfo();
+    const loginTimestamp = getCurrentTimestamp();
+    const loginSuccessful = 'True'; // Example static value, update based on actual login status
+
+    // Constructing the data object to send
+    const data = {
+        'Round-Trip Time [ms]': roundTripTime,
+        'Country': country,
+        'Browser Name and Version': browser,
+        'OS Name and Version': os,
+        'Login Timestamp': loginTimestamp,
+        'Login Successful': loginSuccessful
+    };
+
+    // Sending the data to the server
+    sendData(data);
+}
+
+// Function to handle form submission
+function handleFormSubmit(event) {
+    event.preventDefault(); // Prevent form submission
+    collectAndSendData(); // Collect and send data on form submission
+}
+
+// Setting up periodic data collection and sending (e.g., every 10 seconds)
+setInterval(collectAndSendData, 10000);
+
+// Optionally, collect and send data when the form is submitted
+const formElement = document.querySelector('form');
+if (formElement) {
+    formElement.addEventListener('submit', handleFormSubmit);
 }
