@@ -1,6 +1,7 @@
 from django.urls import path
-from .views import predict_view
+from . import views
 
 urlpatterns = [
-    path('predict/', predict_view, name='predict'),
+    path('predict/', views.predict_view, name='predict'),  # Pass the view function, not call it
+    path('', views.home, name='home'),  # If you have a home view
 ]

@@ -13,7 +13,10 @@ import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+from pathlib import Path
+import os
+
+BASE_DIR = Path(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))
 
 
 # Quick-start development settings - unsuitable for production
@@ -78,7 +81,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            BASE_DIR / "templates",
+            os.path.join(BASE_DIR, 'Different/puneethmurari/templates'),
         ],
         'APP_DIRS': True,
         'OPTIONS': {

@@ -6,11 +6,38 @@ function getCurrentTimestamp() {
 // Function to get user browser and OS information
 function getBrowserAndOSInfo() {
     const userAgent = navigator.userAgent;
-    const browserInfo = userAgent.match(/(Firefox|MSIE|Trident|Edge|Chrome|Safari|Opera)/i);
-    const osInfo = userAgent.match(/(Windows NT|Macintosh|Linux|Android|iPhone|iPad)/i);
+    let browser = 'Unknown';
+    let os = 'Unknown';
+
+    // Determine the browser name and version
+    if (userAgent.indexOf("Firefox") > -1) {
+        browser = "Firefox";
+    } else if (userAgent.indexOf("Chrome") > -1) {
+        browser = "Chrome";
+    } else if (userAgent.indexOf("Safari") > -1) {
+        browser = "Safari";
+    } else if (userAgent.indexOf("Edge") > -1) {
+        browser = "Edge";
+    } else if (userAgent.indexOf("MSIE") > -1 || !!document.documentMode === true) {
+        browser = "IE";
+    }
+
+    // Determine the OS name
+    if (userAgent.indexOf("Windows NT") > -1) {
+        os = "Windows";
+    } else if (userAgent.indexOf("Macintosh") > -1) {
+        os = "MacOS";
+    } else if (userAgent.indexOf("Linux") > -1) {
+        os = "Linux";
+    } else if (userAgent.indexOf("Android") > -1) {
+        os = "Android";
+    } else if (userAgent.indexOf("iPhone") > -1 || userAgent.indexOf("iPad") > -1) {
+        os = "iOS";
+    }
+
     return {
-        browser: browserInfo ? browserInfo[0] : 'Unknown',
-        os: osInfo ? osInfo[0] : 'Unknown'
+        browser: browser,
+        os: os
     };
 }
 
@@ -22,17 +49,38 @@ function getRoundTripTime() {
 }
 
 // Function to get CSRF token from the hidden input
-// Function to get CSRF token
 function getCsrfToken() {
-    // Find the CSRF token element by its ID or name
     const csrfTokenElement = document.querySelector('input[name="csrfmiddlewaretoken"]');
-
-    // Check if the element exists before accessing its value
     if (csrfTokenElement) {
         return csrfTokenElement.value;
     } else {
         console.error("CSRF token element not found.");
         return null;
+    }
+}
+
+// Function to get the user's IP address and country using an external API
+async function getIpAndLocation() {
+    try {
+        const response = await fetch('https://ipapi.co/json/');
+        if (!response.ok) {
+            throw new Error('Failed to fetch IP and location data.');
+        }
+        const data = await response.json();
+        return {
+            ip: data.ip,
+            country: data.country_name,
+            region: data.region,
+            city: data.city
+        };
+    } catch (error) {
+        console.error('Error fetching IP and location data:', error);
+        return {
+            ip: 'Unknown',
+            country: 'Unknown',
+            region: 'Unknown',
+            city: 'Unknown'
+        };
     }
 }
 
@@ -45,7 +93,7 @@ async function sendData(data) {
     }
 
     try {
-        const response = await fetch('/your-api-endpoint/', {
+        const response = await fetch('/predict/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -54,15 +102,12 @@ async function sendData(data) {
             body: JSON.stringify(data)
         });
 
-        // Check if the response is JSON
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
-            // Parse and handle the JSON response
             const result = await response.json();
             console.log('Data sent successfully:', result);
         } else {
-            // Handle unexpected response types
-            const responseText = await response.text(); // Get the raw response
+            const responseText = await response.text();
             console.error("Unexpected response format:", responseText);
             alert("Unexpected response format. Please contact support.");
         }
@@ -71,20 +116,22 @@ async function sendData(data) {
     }
 }
 
-
 // Function to collect and send data
-function collectAndSendData() {
-    // Collecting the necessary data
+async function collectAndSendData() {
     const roundTripTime = getRoundTripTime();
-    const country = 'USA'; // Example static value, use IP geolocation API for dynamic value
     const { browser, os } = getBrowserAndOSInfo();
     const loginTimestamp = getCurrentTimestamp();
     const loginSuccessful = 'True'; // Example static value, update based on actual login status
 
-    // Constructing the data object to send
+    // Fetch IP and location data asynchronously
+    const { ip, country, region, city } = await getIpAndLocation();
+
     const data = {
         'Round-Trip Time [ms]': roundTripTime,
+        'IP Address': ip,
         'Country': country,
+        'Region': region,
+        'City': city,
         'Browser Name and Version': browser,
         'OS Name and Version': os,
         'Login Timestamp': loginTimestamp,
@@ -92,16 +139,7 @@ function collectAndSendData() {
     };
 
     // Sending the data to the server
-
-    sendData(data)
-    .then(result => {
-        // Handle successful data send
-        console.log('Data was successfully sent and received:', result);
-    })
-    .catch(error => {
-        // Handle errors
-        console.error('There was a problem sending the data:', error);
-    });
+    sendData(data);
 }
 
 // Function to handle form submission
@@ -118,32 +156,3 @@ const formElement = document.querySelector('form');
 if (formElement) {
     formElement.addEventListener('submit', handleFormSubmit);
 }
-
-function getCSRFToken() {
-    let csrfToken = null;
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.startsWith('csrftoken=')) {
-            csrfToken = cookie.substring('csrftoken='.length, cookie.length);
-            break;
-        }
-    }
-    return csrfToken;
-}
-
-const csrfToken = getCSRFToken();
-
-fetch('/predict/', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': csrfToken,
-    },
-    body: JSON.stringify({ /* your data here */ }),
-})
-.then(response => response.json())
-.then(data => console.log(data))
-.catch(error => console.error('Error:', error));
-
-

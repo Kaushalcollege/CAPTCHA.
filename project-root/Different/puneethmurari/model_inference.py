@@ -9,8 +9,10 @@ import pandas as pd
 model_path = os.path.join(os.path.dirname(__file__), '/Users/kaushalkento/Desktop/GroupProject./CAPTCHARefinement./project-root/models/trained_model6.keras')
 model = tf.keras.models.load_model(model_path)
 
+# Recompile the model to avoid issues with the optimizer state
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
 # Define the preprocessing pipeline
-# This should match the pipeline used during model training
 categorical_cols = ['Country', 'Browser Name and Version', 'OS Name and Version']
 numerical_cols = ['Round-Trip Time [ms]', 'Login Timestamp', 'Login Successful']
 
@@ -20,10 +22,7 @@ preprocessor = ColumnTransformer(
         ('cat', OneHotEncoder(), categorical_cols)
     ])
 
-
-# Load or define preprocessor based on your setup
-# For now, we assume you recreate it in the code.
-
+# Function to make a prediction
 def make_prediction(input_data):
     # Convert input data into DataFrame
     df = pd.DataFrame([input_data])
