@@ -24,10 +24,7 @@ function getRoundTripTime() {
 // Function to get CSRF token from the hidden input
 // Function to get CSRF token
 function getCsrfToken() {
-    // Find the CSRF token element by its ID or name
     const csrfTokenElement = document.querySelector('input[name="csrfmiddlewaretoken"]');
-
-    // Check if the element exists before accessing its value
     if (csrfTokenElement) {
         return csrfTokenElement.value;
     } else {
@@ -36,16 +33,17 @@ function getCsrfToken() {
     }
 }
 
+
 // Function to send data to the server
 async function sendData(data) {
     const csrfToken = getCsrfToken();
     if (!csrfToken) {
         console.error("Cannot send data: CSRF token is missing.");
-        return;
+        return Promise.reject("CSRF token is missing");
     }
 
     try {
-        const response = await fetch('/your-api-endpoint/', {
+        const response = await fetch('/predict/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -54,55 +52,58 @@ async function sendData(data) {
             body: JSON.stringify(data)
         });
 
-        // Check if the response is JSON
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Server responded with status ${response.status}: ${response.statusText}`);
+            console.error("Response body:", errorText);
+            return Promise.reject(`Server error: ${response.statusText}`);
+        }
+
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
-            // Parse and handle the JSON response
             const result = await response.json();
             console.log('Data sent successfully:', result);
+            return Promise.resolve(result);
         } else {
-            // Handle unexpected response types
-            const responseText = await response.text(); // Get the raw response
-            console.error("Unexpected response format:", responseText);
-            alert("Unexpected response format. Please contact support.");
+            const errorText = await response.text();
+            console.error("Unexpected response format:", errorText);
+            return Promise.reject("Unexpected response format");
         }
     } catch (error) {
         console.error("Error sending data:", error);
+        return Promise.reject(error);
     }
 }
 
 
+
 // Function to collect and send data
 function collectAndSendData() {
-    // Collecting the necessary data
-    const roundTripTime = getRoundTripTime();
-    const country = 'USA'; // Example static value, use IP geolocation API for dynamic value
-    const { browser, os } = getBrowserAndOSInfo();
-    const loginTimestamp = getCurrentTimestamp();
-    const loginSuccessful = 'True'; // Example static value, update based on actual login status
+    const form = document.getElementById('login-form');
+    const formData = new FormData(form);
 
-    // Constructing the data object to send
-    const data = {
-        'Round-Trip Time [ms]': roundTripTime,
-        'Country': country,
-        'Browser Name and Version': browser,
-        'OS Name and Version': os,
-        'Login Timestamp': loginTimestamp,
-        'Login Successful': loginSuccessful
-    };
+    const data = {};
+    formData.forEach((value, key) => {
+        data[key] = value;
+    });
+
+    return sendData(data);
+}
+
 
     // Sending the data to the server
 
-    sendData(data)
-    .then(result => {
-        // Handle successful data send
-        console.log('Data was successfully sent and received:', result);
-    })
-    .catch(error => {
-        // Handle errors
-        console.error('There was a problem sending the data:', error);
-    });
-}
+    document.getElementById('login-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    collectAndSendData()
+        .then(result => {
+            alert('Login successful!');
+        })
+        .catch(error => {
+            alert('There was a problem with the login.');
+        });
+});
 
 // Function to handle form submission
 function handleFormSubmit(event) {

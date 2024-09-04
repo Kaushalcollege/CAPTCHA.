@@ -10,35 +10,32 @@ function getBrowserAndOSInfo() {
     let os = 'Unknown';
 
     // Determine the browser name and version
-    if (userAgent.indexOf("Firefox") > -1) {
+    if (userAgent.includes("Firefox")) {
         browser = "Firefox";
-    } else if (userAgent.indexOf("Chrome") > -1) {
+    } else if (userAgent.includes("Chrome")) {
         browser = "Chrome";
-    } else if (userAgent.indexOf("Safari") > -1) {
+    } else if (userAgent.includes("Safari")) {
         browser = "Safari";
-    } else if (userAgent.indexOf("Edge") > -1) {
+    } else if (userAgent.includes("Edge")) {
         browser = "Edge";
-    } else if (userAgent.indexOf("MSIE") > -1 || !!document.documentMode === true) {
-        browser = "IE";
+    } else if (userAgent.includes("MSIE") || !!document.documentMode) {
+        browser = "MSIE";
     }
 
     // Determine the OS name
-    if (userAgent.indexOf("Windows NT") > -1) {
+    if (userAgent.includes("Windows NT")) {
         os = "Windows";
-    } else if (userAgent.indexOf("Macintosh") > -1) {
+    } else if (userAgent.includes("Macintosh")) {
         os = "MacOS";
-    } else if (userAgent.indexOf("Linux") > -1) {
+    } else if (userAgent.includes("Linux")) {
         os = "Linux";
-    } else if (userAgent.indexOf("Android") > -1) {
+    } else if (userAgent.includes("Android")) {
         os = "Android";
-    } else if (userAgent.indexOf("iPhone") > -1 || userAgent.indexOf("iPad") > -1) {
+    } else if (userAgent.includes("iPhone") || userAgent.includes("iPad")) {
         os = "iOS";
     }
 
-    return {
-        browser: browser,
-        os: os
-    };
+    return { browser, os };
 }
 
 // Function to simulate measuring round-trip time (RTT)
@@ -51,27 +48,21 @@ function getRoundTripTime() {
 // Function to get CSRF token from the hidden input
 function getCsrfToken() {
     const csrfTokenElement = document.querySelector('input[name="csrfmiddlewaretoken"]');
-    if (csrfTokenElement) {
-        return csrfTokenElement.value;
-    } else {
-        console.error("CSRF token element not found.");
-        return null;
-    }
+    return csrfTokenElement ? csrfTokenElement.value : null;
 }
 
-// Function to get the user's IP address and country using an external API
+// Function to get the user's IP address and location using an external API
 async function getIpAndLocation() {
     try {
         const response = await fetch('https://ipapi.co/json/');
-        if (!response.ok) {
-            throw new Error('Failed to fetch IP and location data.');
-        }
+        if (!response.ok) throw new Error('Failed to fetch IP and location data.');
+
         const data = await response.json();
         return {
-            ip: data.ip,
-            country: data.country_name,
-            region: data.region,
-            city: data.city
+            ip: data.ip || 'Unknown',
+            country: data.country_name || 'Unknown',
+            region: data.region || 'Unknown',
+            city: data.city || 'Unknown'
         };
     } catch (error) {
         console.error('Error fetching IP and location data:', error);
@@ -148,11 +139,8 @@ function handleFormSubmit(event) {
     collectAndSendData(); // Collect and send data on form submission
 }
 
-// Setting up periodic data collection and sending (e.g., every 10 seconds)
+// Set up periodic data collection and sending (e.g., every 10 seconds)
 setInterval(collectAndSendData, 10000);
 
 // Optionally, collect and send data when the form is submitted
-const formElement = document.querySelector('form');
-if (formElement) {
-    formElement.addEventListener('submit', handleFormSubmit);
-}
+
